@@ -15,7 +15,7 @@ export function AppLayout() {
 
   return (
     <BaseLayout>
-      <UserLayout walletAddress={address} />
+      <UserLayout walletAddress={address!} />
     </BaseLayout>
   )
 }

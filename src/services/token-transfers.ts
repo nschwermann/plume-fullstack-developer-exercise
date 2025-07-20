@@ -8,14 +8,39 @@ import {
 } from '@/schemas/token-transfers'
 import { TokenEnrichmentUtils, TOKEN_WHITELIST } from '@/utils/token-enrichment'
 
+interface TransferCache {
+  data: EnrichedTokenTransfersResponse
+  timestamp: number
+  cacheKey: string
+}
+
+interface TransferServiceResponse {
+  data: EnrichedTokenTransfersResponse
+  cached: boolean
+  stale?: boolean
+}
+
 export class TokenTransfersService {
+  private static transferCache: Map<string, TransferCache> = new Map()
+  private static readonly CACHE_DURATION = 30 * 1000
   private readonly baseUrl = 'https://explorer-plume-mainnet-1.t.conduit.xyz/api/v2'
 
   async getTokenTransfers(
     address: string, 
     nextPageParams?: { block_number: number; index: number }
-  ): Promise<EnrichedTokenTransfersResponse> {
+  ): Promise<TransferServiceResponse> {
     try {
+      const normalizedAddress = address.toLowerCase()
+      const cacheKey = this.generateCacheKey(normalizedAddress, nextPageParams)
+      
+      // Check if we have valid cached data
+      const cached = TokenTransfersService.transferCache.get(cacheKey)
+      if (cached && this.isCacheValid(cached)) {
+        return {
+          data: cached.data,
+          cached: true
+        }
+      }
       let url = `${this.baseUrl}/addresses/${address}/token-transfers?type=ERC-20`
       
       if (nextPageParams) {
@@ -24,10 +49,34 @@ export class TokenTransfersService {
 
       const response = await axios.get(url)
       const validatedData = TokenTransfersResponseSchema.parse(response.data)
-      
-      return this.enrichTokenTransfers(validatedData, address)
+      const enrichedData = this.enrichTokenTransfers(validatedData, address)
+
+      // Update cache
+      TokenTransfersService.transferCache.set(cacheKey, {
+        data: enrichedData,
+        timestamp: Date.now(),
+        cacheKey
+      })
+
+      return {
+        data: enrichedData,
+        cached: false
+      }
+
     } catch (error) {
       console.error('Error fetching token transfers:', error)
+      
+      // Return cached data if available, even if expired
+      const cacheKey = this.generateCacheKey(address.toLowerCase(), nextPageParams)
+      const cached = TokenTransfersService.transferCache.get(cacheKey)
+      if (cached) {
+        return {
+          data: cached.data,
+          cached: true,
+          stale: true
+        }
+      }
+
       if (axios.isAxiosError(error)) {
         throw new Error(`Failed to fetch token transfers: ${error.message}`)
       }
@@ -40,7 +89,13 @@ export class TokenTransfersService {
     walletAddress: string
   ): EnrichedTokenTransfersResponse {
     const enrichedItems = transfers.items
-      .filter(transfer => TOKEN_WHITELIST.has(transfer.token.address.toLowerCase()))
+      .filter(transfer => 
+        transfer.token.address && 
+        transfer.token.decimals && 
+        transfer.token.name && 
+        transfer.token.symbol &&
+        TOKEN_WHITELIST.has(transfer.token.address.toLowerCase())
+      )
       .map(transfer => 
         this.enrichTokenTransfer(transfer, walletAddress)
       )
@@ -55,9 +110,17 @@ export class TokenTransfersService {
     transfer: TokenTransferItem, 
     walletAddress: string
   ): EnrichedTokenTransferItem {
-    const iconUrl = TokenEnrichmentUtils.getTokenIcon(transfer.token.address.toLowerCase())
+    // At this point, we know these are not null due to filtering
+    const address = transfer.token.address!
+    const decimals = transfer.token.decimals!
+    const name = transfer.token.name!
+    const symbol = transfer.token.symbol!
+
+    const iconUrl = TokenEnrichmentUtils.getTokenIcon(address.toLowerCase())
     const formattedAmount = TokenEnrichmentUtils.formatTokenValue(transfer.total.value, transfer.total.decimals)
-    const usdAmount = TokenEnrichmentUtils.calculateUsdValue(formattedAmount, transfer.token.exchange_rate)
+    const usdAmount = transfer.token.exchange_rate 
+      ? TokenEnrichmentUtils.calculateUsdValue(formattedAmount, transfer.token.exchange_rate)
+      : '-'
     const direction = this.getTransferDirection(transfer, walletAddress)
 
     return {
@@ -77,11 +140,11 @@ export class TokenTransfersService {
         name: transfer.to.name
       },
       token: {
-        address: transfer.token.address,
-        decimals: transfer.token.decimals,
+        address,
+        decimals,
         icon_url: iconUrl,
-        name: transfer.token.name,
-        symbol: transfer.token.symbol
+        name,
+        symbol
       },
       total: transfer.total,
       transaction_hash: transfer.transaction_hash,
@@ -98,5 +161,24 @@ export class TokenTransfersService {
     walletAddress: string
   ): 'in' | 'out' {
     return transfer.to.hash.toLowerCase() === walletAddress.toLowerCase() ? 'in' : 'out'
+  }
+
+  private generateCacheKey(address: string, nextPageParams?: { block_number: number; index: number }): string {
+    const baseKey = `transfers-${address}`
+    if (nextPageParams) {
+      return `${baseKey}-${nextPageParams.block_number}-${nextPageParams.index}`
+    }
+    return `${baseKey}-first-page`
+  }
+
+  private isCacheValid(cache: TransferCache): boolean {
+    return Date.now() - cache.timestamp < TokenTransfersService.CACHE_DURATION
+  }
+
+  getCacheAge(address: string, nextPageParams?: { block_number: number; index: number }): number | null {
+    const cacheKey = this.generateCacheKey(address.toLowerCase(), nextPageParams)
+    const cached = TokenTransfersService.transferCache.get(cacheKey)
+    if (!cached) return null
+    return Date.now() - cached.timestamp
   }
 }

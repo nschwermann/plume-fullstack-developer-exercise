@@ -1,5 +1,4 @@
 'use client';
-import { useQuery } from "@tanstack/react-query";
 import { 
     Card,
     Image,
@@ -8,27 +7,16 @@ import {
     HStack,
     Skeleton,
     SkeletonCircle,
-    SimpleGrid,
-    Span
+    SimpleGrid
 } from "@chakra-ui/react";
-import { EnrichedTokenBalanceResponse } from "@/schemas/token-balance";
-import { formatHex } from "@/utils/formatters";
+import { useTokenBalances } from "@/hooks/useTokenBalances";
 
 interface BalancesProps {
     walletAddress: string;
 }
 
 export function Balances({ walletAddress }: BalancesProps) {
-    const { data, isLoading, isError } = useQuery<EnrichedTokenBalanceResponse>({
-        queryKey: ['tokenBalances', walletAddress],
-        queryFn: async () => {
-            const response = await fetch(`/api/wallets/${walletAddress}/token-balances`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch token balances');
-            }
-            return response.json();
-        }
-    });
+    const { data, isLoading, isError } = useTokenBalances(walletAddress);
 
     if (isLoading) {
         return (
@@ -60,7 +48,7 @@ export function Balances({ walletAddress }: BalancesProps) {
     return (
         <Card.Root p={4} shadow="sm">
             <Text fontWeight="bold" fontSize="lg" mb={4}>
-                Nest Balance <Span fontFamily={'mono'} fontWeight="light" fontSize='sm' color='gray.600'>{formatHex(walletAddress)}</Span>
+                Nest Balance
             </Text>
             <SimpleGrid px={4} columns={{ base: 1, md: 2 }} columnGap={{md : 20, lg: 32, xl: 40}} rowGap={4}>
                 {data?.map((balance) => (

@@ -1,4 +1,3 @@
-// context/index.tsx
 'use client'
 
 import React, { ReactNode } from 'react'
@@ -6,13 +5,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider, cookieToInitialState, type Config } from 'wagmi'
 import { createAppKit } from '@reown/appkit/react'
 import { config, networks, projectId, wagmiAdapter } from '../config'
-import { plumeMainnet } from '../config/wagmi'
+import { plumeMainnet } from 'viem/chains'
 
 const queryClient = new QueryClient()
 
 const metadata = {
-  name: 'Plume Fullstack Exercise',
-  description: 'Plume blockchain wallet integration',
+  name: 'Nest Mini',
+  description: 'Plume Fullstack Exercise',
   url: typeof window !== 'undefined' ? window.location.origin : 'https://localhost:3000',
   icons: ['/favicon.ico'],
 }
@@ -23,7 +22,7 @@ if (!projectId) {
 } else {
   createAppKit({
     adapters: [wagmiAdapter],
-    projectId: projectId!,
+    projectId: projectId,
     networks: networks,
     defaultNetwork: plumeMainnet,
     metadata,

@@ -15,9 +15,24 @@ export async function GET(
     const validatedParams = AddressParamsSchema.parse(resolvedParams)
     
     const tokenBalanceService = new TokenBalanceService()
-    const enrichedBalances = await tokenBalanceService.getTokenBalances(validatedParams.address)
+    const balanceResponse = await tokenBalanceService.getTokenBalances(validatedParams.address)
     
-    return NextResponse.json(enrichedBalances)
+    const headers: Record<string, string> = {
+      'Cache-Control': 'max-age=60'
+    }
+    
+    if (balanceResponse.cached) {
+      headers['X-Cache'] = balanceResponse.stale ? 'STALE' : 'HIT'
+      const age = tokenBalanceService.getCacheAge(validatedParams.address)
+      if (age !== null) {
+        headers['Age'] = Math.floor(age / 1000).toString()
+      }
+    } else {
+      headers['X-Cache'] = 'MISS'
+      headers['Age'] = '0'
+    }
+    
+    return NextResponse.json(balanceResponse.data, { headers })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

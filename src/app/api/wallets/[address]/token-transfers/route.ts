@@ -36,12 +36,27 @@ export async function GET(
     }
     
     const tokenTransfersService = new TokenTransfersService()
-    const enrichedTransfers = await tokenTransfersService.getTokenTransfers(
+    const transferResponse = await tokenTransfersService.getTokenTransfers(
       validatedParams.address,
       nextPageParams
     )
     
-    return NextResponse.json(enrichedTransfers)
+    const headers: Record<string, string> = {
+      'Cache-Control': 'max-age=30'
+    }
+    
+    if (transferResponse.cached) {
+      headers['X-Cache'] = transferResponse.stale ? 'STALE' : 'HIT'
+      const age = tokenTransfersService.getCacheAge(validatedParams.address, nextPageParams)
+      if (age !== null) {
+        headers['Age'] = Math.floor(age / 1000).toString()
+      }
+    } else {
+      headers['X-Cache'] = 'MISS'
+      headers['Age'] = '0'
+    }
+    
+    return NextResponse.json(transferResponse.data, { headers })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

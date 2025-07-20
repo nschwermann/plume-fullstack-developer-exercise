@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "typeRoots": ["../node_modules/@types"],
+    "paths": {
+      "@/*": ["../src/*"],
+      "@typechain/*": ["../typechain-types/*"]
+    }
+  },
+  "include": [
+    "../contracts/**/*.sol",
+    "../test/**/*.ts",
+    "../ignition/**/*.ts",
+    "../hardhat.config.ts",
+    "../scripts/**/*.ts",
+    "../typechain-types/**/*.ts",
+    "../typechain-types/ignition-types.d.ts"
+  ],
+  "exclude": [
+    "../node_modules",
+    "../src",
+    "../.next"
+  ],
+  "ts-node": {
+    "esm": false,
+    "compilerOptions": {
+      "module": "CommonJS"
+    }
+  }
+}

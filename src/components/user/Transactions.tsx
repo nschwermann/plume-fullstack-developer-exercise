@@ -1,5 +1,4 @@
 'use client';
-import { useInfiniteQuery } from "@tanstack/react-query";
 import {
     Table,
     Text,
@@ -16,8 +15,9 @@ import {
 import Link from "next/link";
 import { formatHex } from "@/utils/formatters";
 import { UserAvatar } from "@/components/common/Avatar";
-import { EnrichedTokenTransfersResponse, EnrichedTokenTransferItem } from "@/schemas/token-transfers";
+import { EnrichedTokenTransferItem } from "@/schemas/token-transfers";
 import { FiArrowRight, FiFileText } from "react-icons/fi";
+import { useTokenTransfers } from "@/hooks/useTokenTransfers";
 
 interface TransactionsProps {
     walletAddress: string;
@@ -35,22 +35,7 @@ export function Transactions({ walletAddress }: TransactionsProps) {
         isLoading,
         isError,
         error
-    } = useInfiniteQuery({
-        queryKey: ['token-transfers', walletAddress],
-        queryFn: async ({ pageParam }) => {
-            let url = `/api/wallets/${walletAddress}/token-transfers`;
-            if (pageParam) {
-                url += `?block_number=${pageParam.block_number}&index=${pageParam.index}`;
-            }
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error('Failed to fetch token transfers');
-            }
-            return response.json() as Promise<EnrichedTokenTransfersResponse>;
-        },
-        getNextPageParam: (lastPage) => lastPage.next_page_params,
-        initialPageParam: undefined,
-    });
+    } = useTokenTransfers(walletAddress);
 
     const formatAddress = (address: EnrichedTokenTransferItem['from'] | EnrichedTokenTransferItem['to']) => {
         if (address.ens_domain_name) return address.ens_domain_name;
@@ -92,7 +77,7 @@ export function Transactions({ walletAddress }: TransactionsProps) {
     if (isError) {
         return (
             <Text color="red.500" textAlign="center">
-                Error loading transactions: {error?.message}
+                Error loading transactions: {error.message}
             </Text>
         );
     }
@@ -116,7 +101,7 @@ export function Transactions({ walletAddress }: TransactionsProps) {
                 <Table.Body>
                     {isLoading ? (
                         Array.from({ length: 5 }).map((_, index) => (
-                            <SkeletonRow key={index} index={index} isSmall={isSmall} />
+                            <SkeletonRow key={index} index={index} isSmall={isSmall ?? false} />
                         ))
                     ) : (
                         allTransactions.map((transaction, index) => (
@@ -124,7 +109,7 @@ export function Transactions({ walletAddress }: TransactionsProps) {
                                 key={`${transaction.transaction_hash}-${index}`}
                                 transaction={transaction}
                                 index={index}
-                                isSmall={isSmall}
+                                isSmall={isSmall ?? false}
                                 renderAddressWithIcon={renderAddressWithIcon}
                                 formatTimestamp={formatTimestamp}
                             />
@@ -167,8 +152,8 @@ interface TransactionRowProps {
     transaction: EnrichedTokenTransferItem;
     index: number;
     isSmall: boolean;
-    renderAddressWithIcon: (address: EnrichedTokenTransferItem['from'] | EnrichedTokenTransferItem['to']) => React.JSX.Element;
-    formatTimestamp: (timestamp: string) => string;
+    renderAddressWithIcon: (_address: EnrichedTokenTransferItem['from'] | EnrichedTokenTransferItem['to']) => React.JSX.Element;
+    formatTimestamp: (_timestamp: string) => string;
 }
 
 interface SkeletonRowProps {

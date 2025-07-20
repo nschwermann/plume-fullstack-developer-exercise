@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from 'next/headers'
-import { UIProvider } from "@/components/ui/provider";
+import { UIProvider } from "@/components/chakra_config/provider";
 import ContextProvider from '../../context'
 
 export const metadata: Metadata = {

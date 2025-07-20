@@ -4,9 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run generate:abis && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "npx tsc --noEmit",
+    "hardhat:compile": "npx hardhat compile",
+    "hardhat:test": "npx hardhat test --typecheck",
+    "hardhat:deploy_local": "npx hardhat ignition deploy ignition/modules/TipJar.ts",
+    "hardhat:deploy": "npx hardhat ignition deploy ignition/modules/TipJar.ts --verify",
+    "hardhat:node": "npx hardhat node",
+    "typechain": "npx hardhat compile && npx hardhat typechain",
+    "generate:abis": "npx hardhat compile && npx ts-node --project hardhat/tsconfig.json scripts/generate-abis.ts"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.22.0",
@@ -27,11 +35,23 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@types/node": "^20",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
+    "@nomicfoundation/hardhat-ignition-ethers": "^0.15.14",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@typechain/hardhat": "^9.1.0",
+    "@types/chai": "^4.3.20",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.19.9",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "chai": "^4.5.0",
+    "dotenv": "^17.2.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.1",
-    "typescript": "^5"
+    "hardhat": "^2.26.0",
+    "solady": "^0.1.24",
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.2",
+    "typescript": "^5.8.3"
   }
 }
