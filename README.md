@@ -21,11 +21,11 @@ npm run dev
   - Amount
   - Timestamp
 - Bonus ideas: 
-   - ✅ lookup other wallet addresses (click address in transction history to view details for that transaction)
+   - ✅ lookup other wallet addresses 
    - ✅ copy address to clipboard
    - ✅ cache data serverside
    - ✅ loading state skeletons
-   - ✅ TipJar! (Click 'Tip the Dev' to send me a tip)
+   - ✅ TipJar!
    - ✅ show balance value for n-assets
 
 ## Architecture Overview
@@ -85,14 +85,6 @@ The TipJar contract demonstrates:
 - SafeTransferLib for secure ETH transfers
 - Event emission for transaction tracking
 
-## Extras
-Because this challenge did not require much blockchain interaction only a simple wallet connection and using APIs from an indexer I wanted to demonstrate my talents for blockchain as well.
-
-I originally had intended to allow users to deposit pUSD into a boring vault and mint nALPHA or nTBILL. However, after reviewing the contracts I saw that this required an authorization from the server which did not make it possible. 
-
-I noticed that the PredicateClient is using the diamond storage pattern which I have found extremly useful when developing other upgradable contracts! Also, its using Solmate another library I am familiar with however I have been using Solady instead as its actively maintained.
-
-So I decided to make just a simple "TipJar" contract which will allow users of the platform to send me some PLUME.
 
 ## Demo
 [Demo](https://nest-mini.vercel.app/)
